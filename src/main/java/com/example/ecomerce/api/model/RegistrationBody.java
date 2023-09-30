@@ -3,6 +3,7 @@ package com.example.ecomerce.api.model;
 
 import jakarta.validation.constraints.*;
 
+//Body para el registro de un usuario
 public class RegistrationBody {
 
     @NotNull
