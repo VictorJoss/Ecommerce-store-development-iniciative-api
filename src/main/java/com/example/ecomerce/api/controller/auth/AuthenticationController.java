@@ -4,10 +4,12 @@ import com.example.ecomerce.api.model.LoginBody;
 import com.example.ecomerce.api.model.LoginResponse;
 import com.example.ecomerce.api.model.RegistrationBody;
 import com.example.ecomerce.exception.UserAlreadyExistsException;
+import com.example.ecomerce.model.LocalUser;
 import com.example.ecomerce.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.*;
 
@@ -51,6 +53,13 @@ public class AuthenticationController {
             return ResponseEntity.ok(response);
         }
     }
+
+    //Retorna el usuario logueado actualmente con un JWT en el header de la peticion
+    @GetMapping("/me")
+    public LocalUser getLoggedUserProfile(@AuthenticationPrincipal LocalUser user){
+        return user;
+    }
+
 
 
 
