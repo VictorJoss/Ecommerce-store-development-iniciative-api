@@ -1,5 +1,6 @@
 package com.example.ecomerce.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -17,6 +18,8 @@ public class WebOrderQuantities {
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
+    //Se agrega la anotacion @JsonIgnore para evitar que se genere un ciclo infinito
+    @JsonIgnore
     @ManyToOne(optional = false)
     @JoinColumn(name = "order_id", nullable = false)
     private WebOrder order;

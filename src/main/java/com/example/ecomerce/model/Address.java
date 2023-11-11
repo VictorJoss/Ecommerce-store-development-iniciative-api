@@ -1,5 +1,6 @@
 package com.example.ecomerce.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -22,6 +23,8 @@ public class Address {
     @Column(name = "country", nullable = false, length = 75)
     private String country;
 
+    //Se agrega la anotacion @JsonIgnore para evitar que se genere un ciclo infinito
+    @JsonIgnore
     @ManyToOne(optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private LocalUser user;
