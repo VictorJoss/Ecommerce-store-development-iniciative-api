@@ -27,7 +27,6 @@ public class JWTService {
     //Llave para obtener el username del token
     private static final String USERNAME_KEY = "USERNAME";
 
-
     //Se ejecuta despues de que se inyectan las dependencias
     @PostConstruct
     public void postConstruct(){
