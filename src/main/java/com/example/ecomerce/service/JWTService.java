@@ -26,6 +26,7 @@ public class JWTService {
     private Algorithm algorithm;
     //Llave para obtener el username del token
     private static final String USERNAME_KEY = "USERNAME";
+    private static final String EMAIL_KEY = "EMAIL";
 
     //Se ejecuta despues de que se inyectan las dependencias
     @PostConstruct
@@ -40,6 +41,19 @@ public class JWTService {
         return JWT.create()
                     //Se le agrega el username
                 .withClaim(USERNAME_KEY, user.getUsername())
+                //Se le agrega el tiempo de expiracion
+                .withExpiresAt(new Date(System.currentTimeMillis() + (1000 * expiryInSeconds)))
+                //Se le agrega el emisor
+                .withIssuer(issuer)
+                //Se firma con el algoritmo
+                .sign(algorithm);
+    }
+
+    //genera un token de verificacion de email
+    public String generateVerificationJWT(LocalUser user){
+        return JWT.create()
+                //Se le agrega el username
+                .withClaim(EMAIL_KEY, user.getEmail())
                 //Se le agrega el tiempo de expiracion
                 .withExpiresAt(new Date(System.currentTimeMillis() + (1000 * expiryInSeconds)))
                 //Se le agrega el emisor
