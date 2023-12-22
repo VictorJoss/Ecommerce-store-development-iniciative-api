@@ -2,13 +2,16 @@ package com.example.ecomerce.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @Entity
 @Table(name = "local_user")
-public class LocalUser {
+public class LocalUser implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -36,6 +39,7 @@ public class LocalUser {
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Address> addresses = new ArrayList<>();
 
+    @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     //Ordena los tokens por id de forma descendente para que el token mas reciente este en la primera posicion
     @OrderBy("id desc")
@@ -92,6 +96,13 @@ public class LocalUser {
         this.email = email;
     }
 
+    //modificado
+    //@Override
+    @JsonIgnore
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of();
+    }
+
     public String getPassword() {
         return password;
     }
@@ -102,6 +113,33 @@ public class LocalUser {
 
     public String getUsername() {
         return username;
+    }
+
+    //modificado
+    //@Override
+    @JsonIgnore
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    //modificado
+    //@Override
+    @JsonIgnore
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    //modificado
+    //@Override
+    @JsonIgnore
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    //@Override
+    @JsonIgnore
+    public boolean isEnabled() {
+        return true;
     }
 
     public void setUsername(String username) {

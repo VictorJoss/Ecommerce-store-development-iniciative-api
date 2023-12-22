@@ -47,12 +47,14 @@ public class JWTRequestFilter extends OncePerRequestFilter {
                 //Si el usuario existe
                 if(opUser.isPresent()){
                     LocalUser user = opUser.get();
-                    //Crea un token de autenticacion y lo agrega al contexto de seguridad de Spring Security para que pueda ser usado por los controladores
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null, new ArrayList());
-                    //Se le agrega la informacion de la peticion
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    //Se agrega al contexto de seguridad
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    if(user.isEmailVerified()) {
+                        //Crea un token de autenticacion y lo agrega al contexto de seguridad de Spring Security para que pueda ser usado por los controladores
+                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null, new ArrayList());
+                        //Se le agrega la informacion de la peticion
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        //Se agrega al contexto de seguridad
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    }
                 }
                 //Si el usuario no existe no hace nada
             }catch (JWTDecodeException ex){
