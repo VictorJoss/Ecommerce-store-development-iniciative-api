@@ -27,7 +27,9 @@ public class JWTService {
     private Algorithm algorithm;
     //Llave para obtener el username del token
     private static final String USERNAME_KEY = "USERNAME";
-    private static final String EMAIL_KEY = "EMAIL";
+    private static final String VERIFICATION_EMAIL_KEY = "VERIFICATION_EMAIL";
+
+    private static final String RESET_PASSWORD_EMAIL_KEY = "RESET_PASSWORD_EMAIL";
 
     //Se ejecuta despues de que se inyectan las dependencias
     @PostConstruct
@@ -54,13 +56,30 @@ public class JWTService {
     public String generateVerificationJWT(LocalUser user){
         return JWT.create()
                 //Se le agrega el username
-                .withClaim(EMAIL_KEY, user.getEmail())
+                .withClaim(VERIFICATION_EMAIL_KEY, user.getEmail())
                 //Se le agrega el tiempo de expiracion
                 .withExpiresAt(new Date(System.currentTimeMillis() + (1000 * expiryInSeconds)))
                 //Se le agrega el emisor
                 .withIssuer(issuer)
                 //Se firma con el algoritmo
                 .sign(algorithm);
+    }
+
+    public String generateResetPasswordJWT(LocalUser user){
+        return JWT.create()
+                //Se le agrega el username
+                .withClaim(RESET_PASSWORD_EMAIL_KEY, user.getEmail())
+                //Se le agrega el tiempo de expiracion
+                .withExpiresAt(new Date(System.currentTimeMillis() + (1000 * 60 * 30)))
+                //Se le agrega el emisor
+                .withIssuer(issuer)
+                //Se firma con el algoritmo
+                .sign(algorithm);
+    }
+
+    public String getResetPasswordEmail(String token){
+        DecodedJWT jwt = JWT.require(algorithm).withIssuer(issuer).build().verify(token);
+        return jwt.getClaim(RESET_PASSWORD_EMAIL_KEY).asString();
     }
 
     //Obtiene el username del token

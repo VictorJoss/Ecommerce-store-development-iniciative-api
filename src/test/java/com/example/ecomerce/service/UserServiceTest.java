@@ -1,11 +1,15 @@
 package com.example.ecomerce.service;
 
 import com.example.ecomerce.api.model.LoginBody;
+import com.example.ecomerce.api.model.PasswordResetBody;
 import com.example.ecomerce.api.model.RegistrationBody;
 import com.example.ecomerce.exception.EmailFailureException;
+import com.example.ecomerce.exception.EmailNotFoundException;
 import com.example.ecomerce.exception.UserAlreadyExistsException;
 import com.example.ecomerce.exception.UserNotVerifiedException;
+import com.example.ecomerce.model.LocalUser;
 import com.example.ecomerce.model.VerificationToken;
+import com.example.ecomerce.model.dao.LocalUserDao;
 import com.example.ecomerce.model.dao.VerificationTokenDAO;
 import com.icegreen.greenmail.configuration.GreenMailConfiguration;
 import com.icegreen.greenmail.junit5.GreenMailExtension;
@@ -35,6 +39,12 @@ public class UserServiceTest {
     private UserService userService;
     @Autowired
     private VerificationTokenDAO verificationTokenDAO;
+    @Autowired
+    private LocalUserDao localUserDAO;
+    @Autowired
+    private JWTService jwtService;
+    @Autowired
+    private  EncryptionService encryptionService;
 
     @Test
     @Transactional
@@ -110,6 +120,32 @@ public class UserServiceTest {
             Assertions.assertTrue(userService.verifyUser(token), "Token should be valid.");
             Assertions.assertNotNull(userService.loginUser(body), "The user should now be verified.");
         }
+    }
+
+    @Test
+    @Transactional
+    public void testForgotPassword() throws MessagingException {
+        Assertions.assertThrows(EmailNotFoundException.class,
+                () -> userService.forgotPassword("UserNotExist@junit.com"));
+        Assertions.assertDoesNotThrow(() -> userService.forgotPassword(
+                "UserA@junit.com"), "Non existing email should be rejected.");
+        Assertions.assertEquals("UserA@junit.com",
+                greenMailExtension.getReceivedMessages()[0]
+                        .getRecipients(Message.RecipientType.TO)[0].toString(), "Password " +
+                        "reset email should be sent.");
+    }
+
+    @Test
+    public void testResetPassword() {
+        LocalUser user = localUserDAO.findByUsernameIgnoreCase("UserA").get();
+        String token = jwtService.generateResetPasswordJWT(user);
+        PasswordResetBody body = new PasswordResetBody();
+        body.setToken(token);
+        body.setPassword("Password123456");
+        userService.resetPassword(body);
+        user = localUserDAO.findByUsernameIgnoreCase("UserA").get();
+        Assertions.assertTrue(encryptionService.verifyPassword("Password123456",
+                user.getPassword()), "Password change should be written to DB.");
     }
 
 }

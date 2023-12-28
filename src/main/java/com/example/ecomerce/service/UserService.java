@@ -1,8 +1,10 @@
 package com.example.ecomerce.service;
 
 import com.example.ecomerce.api.model.LoginBody;
+import com.example.ecomerce.api.model.PasswordResetBody;
 import com.example.ecomerce.api.model.RegistrationBody;
 import com.example.ecomerce.exception.EmailFailureException;
+import com.example.ecomerce.exception.EmailNotFoundException;
 import com.example.ecomerce.exception.UserAlreadyExistsException;
 import com.example.ecomerce.exception.UserNotVerifiedException;
 import com.example.ecomerce.model.LocalUser;
@@ -108,4 +110,27 @@ public class UserService {
         }
         return false;
     }
+
+    public void forgotPassword(String email) throws EmailNotFoundException, EmailFailureException {
+        Optional<LocalUser> opUser = localUserDao.findByEmailIgnoreCase(email);
+        if(opUser.isPresent()){
+            LocalUser user = opUser.get();
+            String token = jwtService.generateResetPasswordJWT(user);
+            emailService.sendResetPasswordEmail(user, token);
+        }else{
+            throw new EmailNotFoundException();
+        }
+    }
+
+    public void resetPassword(PasswordResetBody body){
+        String email = jwtService.getResetPasswordEmail(body.getToken());
+        Optional<LocalUser> opUser = localUserDao.findByEmailIgnoreCase(email);
+        if(opUser.isPresent()){
+            LocalUser user = opUser.get();
+            user.setPassword(encryptionService.encryptPassword(body.getPassword()));
+            localUserDao.save(user);
+        }
+    }
+
+
 }

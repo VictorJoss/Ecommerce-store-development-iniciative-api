@@ -30,7 +30,8 @@ public class WebSecurityConfig {
         //Configura las rutas que requieren autenticacion
         http
                 .authorizeHttpRequests((authorize) -> authorize
-                        .requestMatchers("/api/product", "/api/auth/register", "/api/auth/login", "/api/auth/verify", "/error").permitAll()
+                        .requestMatchers("/api/product", "/api/auth/register", "/api/auth/login",
+                                "/api/auth/verify", "/api/auth/forgot", "/api/auth/reset","/error").permitAll()
                         .anyRequest().authenticated()
                 );
 

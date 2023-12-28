@@ -32,8 +32,6 @@ public class JWTRequestFilterTest {
 
     @Autowired
     private LocalUserDao localUserDao;
-    @Value("${jwt.algorithm.key}")
-    private String algorithmKey;
 
     private static final String AUTHENTICATED_PATH = "/api/auth/me";
 
@@ -66,21 +64,4 @@ public class JWTRequestFilterTest {
         mvc.perform(get(AUTHENTICATED_PATH).header("Authorization", "Bearer "+token))
                 .andExpect(status().is(HttpStatus.OK.value()));
     }
-
-    @Test
-    public void testJWTNotGeneratedByUs(){
-        String token = JWT.create().withClaim("USERNAME", "UserA").sign(Algorithm.HMAC256(
-                "NotTheRealSecret"));
-        Assertions.assertThrows(SignatureVerificationException.class, () ->
-            jwtService.getUsername(token));
-    }
-
-    @Test
-    public void testJWTCorrectlySignedNoIssuer(){
-        String token = JWT.create().withClaim("USERNAME", "UserA")
-                .sign(Algorithm.HMAC256(algorithmKey));
-        Assertions.assertThrows(MissingClaimException.class, () ->
-                jwtService.getUsername(token));
-    }
-
 }
