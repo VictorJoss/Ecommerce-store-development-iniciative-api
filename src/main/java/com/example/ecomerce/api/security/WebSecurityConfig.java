@@ -31,7 +31,8 @@ public class WebSecurityConfig {
         http
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers("/api/product", "/api/auth/register", "/api/auth/login",
-                                "/api/auth/verify", "/api/auth/forgot", "/api/auth/reset","/error").permitAll()
+                                "/api/auth/verify", "/api/auth/forgot", "/api/auth/reset","/error",
+                                "/websocket", "/websocket/**").permitAll()
                         .anyRequest().authenticated()
                 );
 
