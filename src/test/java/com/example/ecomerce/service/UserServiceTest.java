@@ -26,26 +26,39 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
 
+/**
+ * Test class to unit test the UserService class.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 public class UserServiceTest {
 
+    /** Extension for mocking email sending. */
     @RegisterExtension
     private static GreenMailExtension greenMailExtension = new GreenMailExtension(ServerSetupTest.SMTP)
             .withConfiguration(GreenMailConfiguration.aConfig().withUser("springboot", "secret"))
             .withPerMethodLifecycle(true);
 
+    /** The UserService to test. */
     @Autowired
     private UserService userService;
+    /** The Verification Token DAO. */
     @Autowired
     private VerificationTokenDAO verificationTokenDAO;
+    /** The Local User DAO. */
     @Autowired
     private LocalUserDao localUserDAO;
+    /** The JWT Service. */
     @Autowired
     private JWTService jwtService;
+    /** The encryption Service. */
     @Autowired
     private  EncryptionService encryptionService;
 
+    /**
+     * Tests the registration process of the user.
+     * @throws MessagingException Thrown if the mocked email service fails somehow.
+     */
     @Test
     @Transactional
     public void testRegisterUser() throws MessagingException {
@@ -55,12 +68,6 @@ public class UserServiceTest {
         body.setFirstName("FirstName");
         body.setLastName("LastName");
         body.setPassword("MySecretPassword123");
-        /*
-        *  la prueba verifica que al invocar userService.registerUser(body)
-        * con ciertos datos (body) se lance una excepción UserAlreadyExistsException.
-        * Si la excepción no se lanza (es decir, si el usuario ya existe pero no se
-        * lanza la excepción), la prueba fallará.
-        * */
         Assertions.assertThrows(UserAlreadyExistsException.class,
                 () -> userService.registerUser(body), "Username should already be in use.");
         body.setUsername("UserServiceTest$testRegisterUser");
@@ -74,6 +81,11 @@ public class UserServiceTest {
                 .getRecipients(Message.RecipientType.TO)[0].toString());
     }
 
+    /**
+     * Tests the loginUser method.
+     * @throws UserNotVerifiedException
+     * @throws EmailFailureException
+     */
     @Test
     @Transactional
     public void testLoginUser() throws UserNotVerifiedException, EmailFailureException{
@@ -104,6 +116,10 @@ public class UserServiceTest {
 
     }
 
+    /**
+     * Tests the verifyUser method.
+     * @throws EmailFailureException
+     */
     @Test
     @Transactional
     public void testVerifyUser() throws UserNotVerifiedException, EmailFailureException{
@@ -122,6 +138,10 @@ public class UserServiceTest {
         }
     }
 
+    /**
+     * Tests the forgotPassword method in the User Service.
+     * @throws MessagingException
+     */
     @Test
     @Transactional
     public void testForgotPassword() throws MessagingException {
@@ -135,6 +155,10 @@ public class UserServiceTest {
                         "reset email should be sent.");
     }
 
+    /**
+     * Tests the resetPassword method in the User Service.
+     * @throws MessagingException
+     */
     @Test
     public void testResetPassword() {
         LocalUser user = localUserDAO.findByUsernameIgnoreCase("UserA").get();

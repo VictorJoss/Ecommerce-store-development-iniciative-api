@@ -24,89 +24,93 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-//Maneja las peticiones de autenticacion con JWT y las agrega al contexto de seguridad de Spring Security
+/**
+ * Filter for decoding a JWT in the Authorization header and loading the user
+ * object into the authentication context.
+ */
 @Component
 public class JWTRequestFilter extends OncePerRequestFilter implements ChannelInterceptor {
 
+    /** The JWT Service. */
     private JWTService jwtService;
+    /** The Local User DAO. */
     private LocalUserDao localUserDao;
 
+    /**
+     * Constructor for spring injection.
+     * @param jwtService
+     * @param localUserDao
+     */
     public JWTRequestFilter(JWTService jwtService, LocalUserDao localUserDao) {
         this.jwtService = jwtService;
         this.localUserDao = localUserDao;
     }
 
-    //Filtra las peticiones
+    /**
+     * Method to intercept the request and check for a JWT in the Authorization header.
+     * @param request The request.
+     * @param response The response.
+     * @param filterChain The filter chain.
+     * @throws ServletException
+     * @throws IOException
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        //Obtiene el token del header
         String tokenHeader = request.getHeader("Authorization");
-        //Verifica el token
         UsernamePasswordAuthenticationToken token = checkToken(tokenHeader);
-        //Si el token no es nulo se agrega al contexto de seguridad de Spring Security
         if(token != null){
             token.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         }
-        //Continua con la peticion normalmente sin importar si se agrego o no el token de autenticacion
         filterChain.doFilter(request, response);
     }
 
+    /**
+     * Method to authenticate a token and return the Authentication object
+     * written to the spring security context.
+     * @param token The token to test.
+     * @return The Authentication object if set.
+     */
     private UsernamePasswordAuthenticationToken checkToken(String token){
-        //Si el token no es nulo y empieza con "Bearer "
         if(token != null && token.startsWith("Bearer ")){
-            //Obtiene el token
             token = token.substring(7);
             try {
-                //Obtiene el username del token
                 String username = jwtService.getUsername(token);
-                //Busca el usuario en la base de datos
                 Optional<LocalUser> opUser = localUserDao.findByUsernameIgnoreCase(username);
-                //Si el usuario existe
                 if(opUser.isPresent()){
                     LocalUser user = opUser.get();
                     if(user.isEmailVerified()) {
-                        //Crea un token de autenticacion y lo agrega al contexto de seguridad de Spring Security para que pueda ser usado por los controladores
                         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null, new ArrayList());
-                        //Se agrega al contexto de seguridad
                         SecurityContextHolder.getContext().setAuthentication(authentication);
                         return authentication;
                     }
                 }
-                //Si el usuario no existe no hace nada
             }catch (JWTDecodeException ex){
             }
         }
-        //Si el token es nulo o no empieza con "Bearer " o el usuario no existe
-        // se agrega un token nulo al contexto de seguridad de Spring Security
         SecurityContextHolder.getContext().setAuthentication(null);
         return null;
     }
 
-    //Este metodo se ejecuta antes de enviar un mensaje por un canal y verifica que el usuario este autenticado
+    /**
+     * Method to intercept the websocket message and check for a JWT in the Authorization header.
+     * @param message The message.
+     * @param channel The channel.
+     * @return The message.
+     */
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel){
-        //Obtiene el tipo de mensaje
         SimpMessageType messageType = (SimpMessageType) message.getHeaders().get("simpMessageType");
-        //se verifica que el mensaje sea de tipo SUBSCRIBE o MESSAGE
-        //Se obtiene el header "nativeHeaders" que contiene los headers de la peticion
         if(messageType.equals(SimpMessageType.SUBSCRIBE) || messageType.equals(SimpMessageType.MESSAGE)){
             Map nativeHeaders = (Map) message.getHeaders().get("nativeHeaders");
-            //Se verifica que el header nativeHeaders no sea nulo y se obtiene el header "Authorization"
             if(nativeHeaders != null){
                 List authTokenList = (List) nativeHeaders.get("Authorization");
-                //Se verifica que el header Authorization no sea nulo
                 if(authTokenList != null){
-                    //Se obtiene el primer valor del header "Authorization"
                     String tokenHeader = (String) authTokenList.get(0);
-                    //Se verifica el token
                     checkToken(tokenHeader);
                 }
             }
         }
-        //Se retorna el mensaje
         return message;
     }
-
-
 
 }

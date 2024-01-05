@@ -18,31 +18,47 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
-//Maneja la logica de negocio de los usuarios
+/**
+ * Service for handling user actions.
+ */
 @Service
 public class UserService {
 
-    //Maneja la tabla de usuarios
+    /** The LocalUserDAO. */
     private LocalUserDao localUserDao;
-    //Encripta y verifica contraseñas
+    /** The VerificationTokenDAO. */
     private EncryptionService encryptionService;
+    /** The encryption service. */
     private JWTService jwtService;
+    /** The JWT service. */
     private EmailService emailService;
+    /** The email service. */
     private VerificationTokenDAO verificatonTokenDAO;
 
-    //Constructor
-    public UserService(LocalUserDao localUserDao, EncryptionService encryptionService, JWTService jwtService, EmailService emailService, VerificationTokenDAO verificatonTokenDAO) {
+    /**
+     * Constructor injected by spring.
+     *
+     * @param localUserDao
+     * @param verificationTokenDAO
+     * @param encryptionService
+     * @param jwtService
+     * @param emailService
+     */
+    public UserService(LocalUserDao localUserDao, EncryptionService encryptionService, JWTService jwtService, EmailService emailService, VerificationTokenDAO verificationTokenDAO) {
         this.localUserDao = localUserDao;
         this.encryptionService = encryptionService;
         this.jwtService = jwtService;
         this.emailService = emailService;
-        this.verificatonTokenDAO = verificatonTokenDAO;
+        this.verificatonTokenDAO = verificationTokenDAO;
     }
 
-    //Registra un usuario
+    /**
+     * Attempts to register a user given the information provided.
+     * @param registrationBody The registration information.
+     * @return The local user that has been written to the database.
+     * @throws UserAlreadyExistsException Thrown if there is already a user with the given information.
+     */
     public LocalUser registerUser(RegistrationBody registrationBody) throws UserAlreadyExistsException, EmailFailureException {
-
-        //Verifica si el username o el email ya existen
         if (localUserDao.findByEmailIgnoreCase(registrationBody.getEmail()).isPresent()
         || localUserDao.findByUsernameIgnoreCase(registrationBody.getUsername()).isPresent()){
             throw new UserAlreadyExistsException();
@@ -55,12 +71,14 @@ public class UserService {
         user.setPassword(encryptionService.encryptPassword(registrationBody.getPassword()));
         VerificationToken verificationToken = createVerificationToken(user);
         emailService.sendVerificationEmail(verificationToken);
-        //verificatonTokenDAO.save(verificationToken);
-
         return localUserDao.save(user);
     }
 
-    //Crea un token de verificacion de email
+    /**
+     * Creates a VerificationToken object for sending to the user.
+     * @param user The user the token is being generated for.
+     * @return The object created.
+     */
     private VerificationToken createVerificationToken(LocalUser user){
         VerificationToken verificationToken = new VerificationToken();
         verificationToken.setToken(jwtService.generateVerificationJWT(user));
@@ -70,7 +88,11 @@ public class UserService {
         return verificationToken;
     }
 
-    //Loguea un usuario y retorna el JWT
+    /**
+     * Logins in a user and provides an authentication token back.
+     * @param loginBody The login request.
+     * @return The authentication token. Null if the request was invalid.
+     */
     public String loginUser(LoginBody loginBody) throws UserNotVerifiedException, EmailFailureException {
         Optional<LocalUser> opUser = localUserDao.findByUsernameIgnoreCase(loginBody.getUsername());
         if(opUser.isPresent()){
@@ -94,7 +116,11 @@ public class UserService {
         return null;
     }
 
-    //Se debe agregar la anotacion @Transactional porque se modifica la base de datos.
+    /**
+     * Verifies a user from the given token.
+     * @param token The token to use to verify a user.
+     * @return True if it was verified, false if already verified or token invalid.
+     */
     @Transactional
     public boolean verifyUser(String token){
         Optional<VerificationToken> opToken = verificatonTokenDAO.findByToken(token);
@@ -111,6 +137,12 @@ public class UserService {
         return false;
     }
 
+    /**
+     * Sends the user a forgot password reset based on the email provided.
+     * @param email The email to send to.
+     * @throws EmailNotFoundException Thrown if there is no user with that email.
+     * @throws EmailFailureException
+     */
     public void forgotPassword(String email) throws EmailNotFoundException, EmailFailureException {
         Optional<LocalUser> opUser = localUserDao.findByEmailIgnoreCase(email);
         if(opUser.isPresent()){
@@ -122,6 +154,10 @@ public class UserService {
         }
     }
 
+    /**
+     * Resets the users password using a given token and email.
+     * @param body The password reset information.
+     */
     public void resetPassword(PasswordResetBody body){
         String email = jwtService.getResetPasswordEmail(body.getToken());
         Optional<LocalUser> opUser = localUserDao.findByEmailIgnoreCase(email);
@@ -132,6 +168,12 @@ public class UserService {
         }
     }
 
+    /**
+     * Method to check if an authenticated user has permission to a user ID.
+     * @param user The authenticated user.
+     * @param id The user ID.
+     * @return True if they have permission, false otherwise.
+     */
     public boolean userHasPermissionToUser(LocalUser user, Long id){
         return user.getId().equals(id);
     }

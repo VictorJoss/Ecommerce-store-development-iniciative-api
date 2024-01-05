@@ -3,12 +3,16 @@ package com.example.ecomerce.api.model;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-//Body para el login de un usuario
+/**
+ * The body for the login requests.
+ */
 public class LoginBody {
 
+    /** The username to log in with. */
     @NotNull
     @NotBlank
     private String username;
+    /** The password to log in with. */
     @NotNull
     @NotBlank
     private String password;

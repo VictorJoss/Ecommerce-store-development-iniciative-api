@@ -6,13 +6,13 @@ import org.springframework.data.repository.ListCrudRepository;
 
 import java.util.Optional;
 
-//Maneja la tabla de usuarios
+/**
+ * Data Access Object for the LocalUser data.
+ */
 public interface LocalUserDao extends ListCrudRepository<LocalUser, Long> {
 
-    //Verifica si el username ya existe
     Optional<LocalUser> findByUsernameIgnoreCase(String username);
 
-    //Verifica si el email ya existe
     Optional<LocalUser> findByEmailIgnoreCase(String email);
 
 }

@@ -19,25 +19,42 @@ import java.util.List;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Class for testing OrderController.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 public class OrderControllerTest {
 
+    /** Mocked MVC. */
     @Autowired
     private MockMvc mvc;
 
+    /**
+     * Tests that when requested authenticated order list it belongs to user A.
+     * @throws Exception
+     */
     @Test
     @WithUserDetails("UserA")
     public void testUserAAuthenticatedOrderList() throws Exception{
         testAuthenticatedListBelongsToUser("UserA");
     }
 
+    /**
+     * Tests that when requested authenticated order list it belongs to user B.
+     * @throws Exception
+     */
     @Test
     @WithUserDetails("UserB")
     public void testUserBAuthenticatedOrderList() throws Exception{
         testAuthenticatedListBelongsToUser("UserB");
     }
 
+    /**
+     * Tests that when requested authenticated order list it belongs to the given user.
+     * @param username the username to test for.
+     * @throws Exception
+     */
     private void testAuthenticatedListBelongsToUser(String username) throws Exception{
         mvc.perform(get("/api/order")).andExpect(status().is(HttpStatus.OK.value()))
                 .andExpect(result -> {
@@ -49,6 +66,10 @@ public class OrderControllerTest {
                 });
     }
 
+    /**
+     * Tests the unauthenticated users do not receive data.
+     * @throws Exception
+     */
     @Test
     public void testUnauthenticatedOrderList() throws Exception{
         mvc.perform(get("/api/order")).andExpect(status().is(HttpStatus.FORBIDDEN.value()));

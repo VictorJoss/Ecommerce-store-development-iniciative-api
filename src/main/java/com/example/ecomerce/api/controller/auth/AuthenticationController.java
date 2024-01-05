@@ -10,43 +10,56 @@ import com.example.ecomerce.exception.UserAlreadyExistsException;
 import com.example.ecomerce.exception.UserNotVerifiedException;
 import com.example.ecomerce.model.LocalUser;
 import com.example.ecomerce.service.UserService;
+import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.*;
 
-//Maneja las peticiones de autenticacion
+/**
+ * Rest Controller for handling authentication requests.
+ */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthenticationController {
 
-    //Maneja la logica de negocio de los usuarios
+    /** The user service. */
     private UserService userService;
 
+    /**
+     * Spring injected constructor.
+     * @param userService
+     */
     public AuthenticationController(UserService userService) {
         this.userService = userService;
     }
 
-    //Registra un usuario
+    /**
+     * Post Mapping to handle registering users.
+     * @param registrationBody The registration information.
+     * @return Response to front end.
+     */
+    @Operation(summary = "Register a new user", description = "Registers a new user with the system.")
     @PostMapping("/register")
     public ResponseEntity registerUser(@Valid @RequestBody RegistrationBody registrationBody) {
         try{
             userService.registerUser(registrationBody);
-            //Retorna un codigo 200
             return ResponseEntity.ok().build();
         }catch (UserAlreadyExistsException ex){
-            //Retorna un codigo 409
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
-            //En caso de que falle el envio del email
         } catch (EmailFailureException ex) {
             return  ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-
     }
 
-    //Loguea un usuario con un JWT
+    /**
+     * Post Mapping to handle user logins to provide authentication token.
+     * @param loginBody The login information.
+     * @return The authentication token if successful.
+     */
+    @Operation(summary = "Login a user", description = "Logs in a user and returns a JWT token.")
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> loginUser(@Valid @RequestBody LoginBody loginBody){
         String jwt = null;
@@ -61,22 +74,26 @@ public class AuthenticationController {
             }
             response.setFailureReason(reason);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
-            //En caso de que falle el envio del email
         } catch (EmailFailureException ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
         if(jwt == null){
-            //Retorna un codigo 400
             return  ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }else {
             LoginResponse response = new LoginResponse();
             response.setJwt(jwt);
             response.setSucess(true);
-            //Retorna un codigo 200 y el JWT
             return ResponseEntity.ok(response);
         }
     }
 
+    /**
+     * Post mapping to verify the email of an account using the emailed token.
+     * @param token The token emailed for verification. This is not the same as a
+     *              authentication JWT.
+     * @return 200 if successful. 409 if failure.
+     */
+    @Hidden
     @PostMapping("/verify")
     public ResponseEntity verifyEmail(@RequestParam String token){
         if(userService.verifyUser(token)){
@@ -86,12 +103,23 @@ public class AuthenticationController {
         }
     }
 
-    //Retorna el usuario logueado actualmente con un JWT en el header de la peticion
+    /**
+     * Gets the profile of the currently logged-in user and returns it.
+     * @param user The authentication principal object.
+     * @return The user profile.
+     */
+    @Operation(summary = "Get the logged in user profile", description = "Gets the profile of the currently logged in user.")
     @GetMapping("/me")
     public LocalUser getLoggedUserProfile(@AuthenticationPrincipal LocalUser user){
         return user;
     }
 
+    /**
+     * Sends an email to the user with a link to reset their password.
+     * @param email The email to reset.
+     * @return Ok if sent, bad request if email not found.
+     */
+    @Operation(summary = "Send password reset email", description = "Sends an email to the user with a link to reset their password.")
     @PostMapping("/forgot")
     public ResponseEntity forgotPassword(@RequestParam String email){
         try{
@@ -104,6 +132,12 @@ public class AuthenticationController {
         }
     }
 
+    /**
+     * Resets the users password with the given token and password.
+     * @param body The information for the password reset.
+     * @return Okay if password was set.
+     */
+    @Hidden
     @PostMapping("/reset")
     public ResponseEntity resetPassword(@Valid @RequestBody PasswordResetBody body){
         userService.resetPassword(body);

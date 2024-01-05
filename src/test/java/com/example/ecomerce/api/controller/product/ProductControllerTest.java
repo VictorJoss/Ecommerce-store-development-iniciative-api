@@ -10,13 +10,21 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Class for testing the ProductController
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 public class ProductControllerTest {
 
+    /** Mocked MVC. */
     @Autowired
     private MockMvc mvc;
 
+    /**
+     * Tests getting the product list.
+     * @throws Exception
+     */
     @Test
     public void testProductList() throws Exception{
         mvc.perform(get("/api/product")).andExpect(status().is(HttpStatus.OK.value()));

@@ -6,41 +6,55 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 
-//Establecemos las configuraciones de seguridad de nuestra aplicacion.
+/**
+ * Configuration of the security on endpoints.
+ */
 @Configuration
 public class WebSecurityConfig {
 
     private JWTRequestFilter jwtRequestFilter;
 
+    /**
+     * Constructor for spring injection.
+     * @param jwtRequestFilter
+     */
     public WebSecurityConfig(JWTRequestFilter jwtRequestFilter) {
         this.jwtRequestFilter = jwtRequestFilter;
     }
 
-    //Desactiva la proteccion csrf y cors, ademas de agregar el filtro que valida el JWT
+    /**
+     * Filter chain to configure security.
+     * @param http The security object.
+     * @return The chain built.
+     * @throws Exception Thrown on error configuring.
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http)throws Exception{
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.disable());
-
-        //Agrega el filtro que valida el JWT
+        // We need to make sure our authentication filter is run before the http request filter is run.
         http
                 .addFilterBefore(jwtRequestFilter, AuthorizationFilter.class);
-
-        //Configura las rutas que requieren autenticacion
+        // Specific exclusions or rules.
         http
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers("/api/product", "/api/auth/register", "/api/auth/login",
                                 "/api/auth/verify", "/api/auth/forgot", "/api/auth/reset","/error",
                                 "/websocket", "/websocket/**").permitAll()
+                        .requestMatchers(AUTH_WHITELIST).permitAll()
+                        // Everything else should be authenticated.
                         .anyRequest().authenticated()
                 );
-
-        /* (en el video se usa esta forma, pero no funciona porque corresponde a una version anterior de spring y sprign security)
-        http.csrf().disable().cors().disable();
-        http.authorizeHttpRequests().anyRequest().permitAll();
-         */
-
         return http.build();
     }
+
+    /** The list of endpoints to allow access to. */
+    private static final String[] AUTH_WHITELIST = {
+            "/api/v1/auth/**",
+            "/swagger-ui/**",
+            "/v3/api-docs.yaml",
+            "/v3/api-docs/**",
+            "/swagger-ui.html"
+    };
 }

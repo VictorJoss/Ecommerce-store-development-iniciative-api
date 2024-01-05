@@ -25,74 +25,94 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 import java.util.Map;
 
+/**
+ * Class to configures spring websockets.
+ */
 @Configuration
 @EnableWebSocket
 @EnableWebSocketMessageBroker
 public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer {
 
+    /** The Application Context. */
     private ApplicationContext context;
+    /** The JWT Request Filter. */
     private JWTRequestFilter jwtRequestFilter;
+    /** The User Service. */
     private UserService userService;
-    //Se crea un AntPathMatcher para comparar rutas
+    /** Matcher instance. */
     private static  final AntPathMatcher MATCHER = new AntPathMatcher();
 
+    /**
+     * Default constructor for spring injection.
+     * @param context
+     * @param jwtRequestFilter
+     * @param userService
+     */
     public WebSocketConfiguration(ApplicationContext context, JWTRequestFilter jwtRequestFilter, UserService userService) {
         this.context = context;
         this.jwtRequestFilter = jwtRequestFilter;
         this.userService = userService;
     }
 
-    //Se configura el punto de entrada para el websocket
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/websocket").setAllowedOriginPatterns("**").withSockJS();
     }
 
-    //Se configura el broker de mensajes.
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        //Se configura el broker para que los mensajes que lleguen a /topic se envien a todos los usuarios
         registry.enableSimpleBroker("/topic");
-        //Se configura el broker para que los mensajes que lleguen a /app se envien a los controladores
         registry.setApplicationDestinationPrefixes("/app");
     }
 
-    //Este metodo se encarga de configurar el canal de entrada de mensajes
+    /**
+     * Creates an AuthorizationManager for managing authentication required for
+     * specific channels.
+     * @return The AuthorizationManager object.
+     */
     private AuthorizationManager<Message<?>> makeMessageAuthorizationManager(){
-        //Se crea un builder para configurar el AuthorizationManager
         MessageMatcherDelegatingAuthorizationManager.Builder message =
                 new MessageMatcherDelegatingAuthorizationManager.Builder();
         message.
-                //Indica que la ruta /topic/user/** requiere autenticacion para enviar mensajes
                 simpDestMatchers("/topic/user/**").authenticated()
                 .anyMessage().permitAll();
         return message.build();
     }
 
-    //Este metodo
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        //Se crea un AuthorizationManager para los mensajes
         AuthorizationManager<Message<?>> authorizationManager =
                 makeMessageAuthorizationManager();
-        //Se crea un AuthorizationChannelInterceptor para los mensajes
         AuthorizationChannelInterceptor authInterceptor =
                 new AuthorizationChannelInterceptor(authorizationManager);
-        //Se crea un AuthorizationEventPublisher para los mensajes
         AuthorizationEventPublisher publisher =
                 new SpringAuthorizationEventPublisher(context);
-        //Se configura el AuthorizationEventPublisher para el AuthorizationChannelInterceptor
         authInterceptor.setAuthorizationEventPublisher(publisher);
-        //Se configura el AuthorizationChannelInterceptor y el JWTRequestFilter para el canal de entrada
         registration.interceptors(jwtRequestFilter, authInterceptor,
                 new RejectClientMessagesOnChannelsChannelInterceptor(),
                 new DestinationLevelAuthorizationChannelInterceptor());
     }
 
+    /**
+     * Interceptor for rejecting client messages on specific channels.
+     */
     private class RejectClientMessagesOnChannelsChannelInterceptor implements ChannelInterceptor{
 
+        /** Paths that do not allow client messages. */
         private  String[] paths = new String[] {"topic/user/*/address"};
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public Message<?> preSend(Message<?> message, MessageChannel channel) {
             if (message.getHeaders().get("simpMessageType").equals(SimpMessageType.MESSAGE)) {
@@ -107,8 +127,15 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
         }
     }
 
+    /**
+     * Interceptor to apply authorization and permissions onto specific
+     * channels and path variables.
+     */
     private class DestinationLevelAuthorizationChannelInterceptor implements ChannelInterceptor{
 
+        /**
+         * {@inheritDoc}
+         */
         public Message<?> preSend(Message<?> message, MessageChannel channel) {
             if (message.getHeaders().get("simpMessageType").equals(SimpMessageType.SUBSCRIBE)) {
                 String destination = (String) message.getHeaders().get(

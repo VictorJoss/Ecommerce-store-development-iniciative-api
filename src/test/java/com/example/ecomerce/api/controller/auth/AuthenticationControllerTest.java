@@ -18,20 +18,27 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Tests the endpoints in the AuthenticationController.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 public class AuthenticationControllerTest {
 
+    /** Extension for mocking email sending. */
     @RegisterExtension
     private static GreenMailExtension greenMailExtension = new GreenMailExtension(ServerSetupTest.SMTP)
             .withConfiguration(GreenMailConfiguration.aConfig().withUser("springboot", "secret"))
             .withPerMethodLifecycle(true);
 
+    /** The Mocked MVC. */
     @Autowired
     private MockMvc mvc;
 
-    //private static final String GOOD_REGISTRATION_JSON = "{\"}";
-
+    /**
+     * Tests the register endpoint.
+     * @throws Exception
+     */
     @Test
     @Transactional
     public void testRegister() throws Exception {
@@ -102,8 +109,5 @@ public class AuthenticationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(body)))
                 .andExpect(status().is(HttpStatus.OK.value()));
-
-
-
     }
 }

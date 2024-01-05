@@ -10,79 +10,90 @@ import org.springframework.stereotype.Service;
 
 import java.util.Date;
 
-//Maneja y genera los tokens de autenticacion
+/**
+ * Service for handling JWTs for user authentication.
+ */
 @Service
 public class JWTService {
 
-    //Llave para encriptar el token con el algoritmo HMAC256
+    /** The secret key to encrypt the JWTs with. */
     @Value("${jwt.algorithm.key}")
     private String algorithmKey;
-    //Emisor del token
+    /** The issuer the JWT is signed with. */
     @Value("${jwt.issuer}")
     private String issuer;
-    //Tiempo de expiracion del token
+    /** How many seconds from generation should the JWT expire? */
     @Value("${jwt.expiryInSeconds}")
     private int expiryInSeconds;
-    //Algoritmo de encriptacion
+    /** The algorithm generated post construction. */
     private Algorithm algorithm;
-    //Llave para obtener el username del token
+    /** The JWT claim key for the username. */
     private static final String USERNAME_KEY = "USERNAME";
     private static final String VERIFICATION_EMAIL_KEY = "VERIFICATION_EMAIL";
-
     private static final String RESET_PASSWORD_EMAIL_KEY = "RESET_PASSWORD_EMAIL";
 
-    //Se ejecuta despues de que se inyectan las dependencias
+    /**
+     * Post construction method.
+     */
     @PostConstruct
     public void postConstruct(){
-        //Se crea el algoritmo de encriptacion
         algorithm = Algorithm.HMAC256(algorithmKey);
     }
 
-    //Genera un token de autenticacion
+    /**
+     * Generates a JWT based on the given user.
+     * @param user The user to generate for.
+     * @return The JWT.
+     */
     public String generateJWT(LocalUser user){
-        //Se crea el token
         return JWT.create()
-                    //Se le agrega el username
                 .withClaim(USERNAME_KEY, user.getUsername())
-                //Se le agrega el tiempo de expiracion
                 .withExpiresAt(new Date(System.currentTimeMillis() + (1000 * expiryInSeconds)))
-                //Se le agrega el emisor
                 .withIssuer(issuer)
-                //Se firma con el algoritmo
                 .sign(algorithm);
     }
 
-    //genera un token de verificacion de email
+    /**
+     * Generates a special token for verification of an email.
+     * @param user The user to create the token for.
+     * @return The token generated.
+     */
     public String generateVerificationJWT(LocalUser user){
         return JWT.create()
-                //Se le agrega el username
                 .withClaim(VERIFICATION_EMAIL_KEY, user.getEmail())
-                //Se le agrega el tiempo de expiracion
                 .withExpiresAt(new Date(System.currentTimeMillis() + (1000 * expiryInSeconds)))
-                //Se le agrega el emisor
                 .withIssuer(issuer)
-                //Se firma con el algoritmo
                 .sign(algorithm);
     }
 
+    /**
+     * Generates a JWT for use when resetting a password.
+     * @param user The user to generate for.
+     * @return The generated JWT token.
+     */
     public String generateResetPasswordJWT(LocalUser user){
         return JWT.create()
-                //Se le agrega el username
                 .withClaim(RESET_PASSWORD_EMAIL_KEY, user.getEmail())
-                //Se le agrega el tiempo de expiracion
                 .withExpiresAt(new Date(System.currentTimeMillis() + (1000 * 60 * 30)))
-                //Se le agrega el emisor
                 .withIssuer(issuer)
-                //Se firma con el algoritmo
                 .sign(algorithm);
     }
 
+    /**
+     * Gets the email from a password reset token.
+     * @param token The token to use.
+     * @return The email in the token if valid.
+     */
     public String getResetPasswordEmail(String token){
         DecodedJWT jwt = JWT.require(algorithm).withIssuer(issuer).build().verify(token);
         return jwt.getClaim(RESET_PASSWORD_EMAIL_KEY).asString();
     }
 
-    //Obtiene el username del token
+    /**
+     * Gets the username out of a given JWT.
+     * @param token The JWT to decode.
+     * @return The username stored inside.
+     */
     public String getUsername(String token){
         DecodedJWT jwt = JWT.require(algorithm).withIssuer(issuer).build().verify(token);
         return jwt.getClaim(USERNAME_KEY).asString();

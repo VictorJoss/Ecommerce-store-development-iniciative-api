@@ -1,10 +1,15 @@
 package com.example.ecomerce.api.model;
 
-//Body para el jwt de un usuario
+/**
+ * The response object sent from login request.
+ */
 public class LoginResponse {
 
+    /** The JWT token to be used for authentication. */
     private String jwt;
+    /** Was the login process successful? */
     private boolean sucess;
+    /** The reason for failure on login. */
     private String failureReason;
 
     public String getJwt() {

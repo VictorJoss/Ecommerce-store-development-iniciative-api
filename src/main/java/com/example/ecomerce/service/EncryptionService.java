@@ -5,28 +5,41 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
-//Encripta y verifica contraseñas
+/**
+ * Service for handling encryption of passwords.
+ */
 @Service
 public class EncryptionService {
 
-    //Numero de veces que se aplica el algoritmo de encriptacion
+    /** How many salt rounds should the encryption run. */
     @Value("${encryption.salt.rounds}")
     private int saltRounds;
-    //Salto para encriptar
+    /** The salt built after construction. */
     private String salt;
 
-    //Se ejecuta despues de que se inyectan las dependencias
+    /**
+     * Post construction method.
+     */
     @PostConstruct
     public void postConstruct(){
         salt = BCrypt.gensalt(saltRounds);
     }
 
-    //Encripta la contraseña
+    /**
+     * Encrypts the given password.
+     * @param password The plain text password.
+     * @return The encrypted password.
+     */
     public String encryptPassword(String password){
         return BCrypt.hashpw(password, salt);
     }
 
-    //Verifica la contraseña
+    /**
+     * Verifies that a password is correct.
+     * @param password The plain text password.
+     * @param hashedPassword The encrypted password.
+     * @return True if the password is correct, false otherwise.
+     */
     public boolean verifyPassword(String password, String hashedPassword){
         return BCrypt.checkpw(password, hashedPassword);
     }

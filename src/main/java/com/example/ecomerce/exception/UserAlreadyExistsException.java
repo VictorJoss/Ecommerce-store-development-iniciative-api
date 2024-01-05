@@ -1,5 +1,8 @@
 package com.example.ecomerce.exception;
 
-//Se lanza esta excepcion cuando el usuario ya existe
+/**
+ * Exception thrown at user registration if an existing user already exists
+ * with the given information.
+ */
 public class UserAlreadyExistsException extends Exception{
 }

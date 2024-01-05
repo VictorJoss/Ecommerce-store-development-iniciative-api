@@ -13,17 +13,26 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 
+/**
+ * Class to test the JWTService.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 public class JWTServiceTest {
 
+    /** The JWTService to test. */
     @Autowired
     private JWTService jwtService;
+    /** The Local User DAO. */
     @Autowired
     private LocalUserDao localUserDao;
+    /** The algorithm key we're using in the properties file. */
     @Value("${jwt.algorithm.key}")
     private String algorithmKey;
 
+    /**
+     * Tests that the verification token is not usable for login.
+     */
     @Test
     public void testVerificationTokenNotUsableForLogin(){
         LocalUser user = localUserDao.findByUsernameIgnoreCase("UserA").get();
@@ -31,6 +40,9 @@ public class JWTServiceTest {
         Assertions.assertNull(jwtService.getUsername(token), "Verification token should not contain username.");
     }
 
+    /**
+     * Tests that the authentication token generate still returns the username.
+     */
     @Test
     public void testAuthTokenReturnUsername(){
         LocalUser user = localUserDao.findByUsernameIgnoreCase("UserA").get();
@@ -38,6 +50,10 @@ public class JWTServiceTest {
         Assertions.assertEquals(user.getUsername(), jwtService.getUsername(token), "Token for auth should contain users username");
     }
 
+    /**
+     * Tests that when someone generates a JWT with an algorithm different to
+     * ours the verification rejects the token as the signature is not verified.
+     */
     @Test
     public void testLoginJWTNotGeneratedByUs() {
         String token =
@@ -47,6 +63,10 @@ public class JWTServiceTest {
                 () -> jwtService.getUsername(token));
     }
 
+    /**
+     * Tests that when a JWT token is generated if it does not contain us as
+     * the issuer we reject it.
+     */
     @Test
     public void testLoginJWTCorrectlySignedNoIssuer() {
         String token =
@@ -56,6 +76,10 @@ public class JWTServiceTest {
                 () -> jwtService.getUsername(token));
     }
 
+    /**
+     * Tests that when someone generates a JWT with an algorithm different to
+     * ours the verification rejects the token as the signature is not verified.
+     */
     @Test
     public void testResetPasswordJWTNotGeneratedByUs() {
         String token =
@@ -65,6 +89,10 @@ public class JWTServiceTest {
                 () -> jwtService.getResetPasswordEmail(token));
     }
 
+    /**
+     * Tests that when a JWT token is generated if it does not contain us as
+     * the issuer we reject it.
+     */
     @Test
     public void testResetPasswordJWTCorrectlySignedNoIssuer() {
         String token =
@@ -74,6 +102,9 @@ public class JWTServiceTest {
                 () -> jwtService.getResetPasswordEmail(token));
     }
 
+    /**
+     * Tests the password reset generation and verification.
+     */
     @Test
     public void testPasswordResetToken() {
         LocalUser user = localUserDao.findByUsernameIgnoreCase("UserA").get();
